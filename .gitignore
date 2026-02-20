@@ -1,0 +1,9 @@
+# Ignore generated baseline and reports
+registry_baseline.json
+Security_Report.txt
+*.pdf
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class

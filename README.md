@@ -21,5 +21,4 @@ This project is a Blue Team cybersecurity toolkit designed to track unauthorized
    cd Windows-Registry-Monitor
    Install the required dependencies:
 
-2.Bash
-  pip install -r requirements.txt
+2. pip install -r requirements.txt

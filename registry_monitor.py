@@ -8,20 +8,20 @@ import json
 import os
 import math
 from datetime import datetime
-from fpdf import FPDF  
+from fpdf import FPDF
 
 # --- UI Configuration ---
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
 
 BASELINE_FILE = "registry_baseline.json"
-REPORT_FILE = "Security_Report.txt"
+REPORT_PDF_FILE = "Performa_Security_Report.pdf"
 POLL_INTERVAL = 5 
 
 # --- Custom UI Widgets ---
 class CircularGauge(tk.Canvas):
     """Responsive circular gauge widget for dashboard metrics."""
-    def __init__(self, parent, color, max_value=10, **kwargs):
+    def __init__(self, parent, color, max_value=100, **kwargs):
         bg_color = parent._apply_appearance_mode(parent.cget("fg_color"))
         super().__init__(parent, bg=bg_color, highlightthickness=0, width=0, height=0, **kwargs)
         self.color = color
@@ -32,8 +32,7 @@ class CircularGauge(tk.Canvas):
 
     def set_value(self, value):
         self.target_value = value
-        if self.target_value > self.max_value:
-            self.max_value = self.target_value + 10 
+        # Removed auto-scaling so the circle strictly represents progress to 100
         self.animate()
 
     def animate(self):
@@ -114,30 +113,53 @@ class RegistryMonitorApp(ctk.CTk):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
-        # Sidebar navigation
+        # --- Sidebar Navigation ---
         self.sidebar_frame = ctk.CTkFrame(self, width=220, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(7, weight=1)
+        self.sidebar_frame.grid_rowconfigure(9, weight=1) # Spacer row pushes info button to bottom
 
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="🛡️ Performa Sec", font=ctk.CTkFont(size=22, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(30, 40))
 
-        self.btn_baseline = ctk.CTkButton(self.sidebar_frame, text="Create Baseline", command=self.animated_create_baseline, height=40)
-        self.btn_baseline.grid(row=1, column=0, padx=20, pady=10)
+        # Professional Button Styles
+        primary_style = {"fg_color": "#1f538d", "hover_color": "#14375e", "text_color": "white"}
+        secondary_style = {"fg_color": "#2b2b2b", "hover_color": "#3b3b3b", "border_width": 1, "border_color": "#444444", "text_color": "#e0e0e0"}
+        start_style = {"fg_color": "#215f3d", "hover_color": "#18452c", "text_color": "white"}
+        stop_style = {"fg_color": "#7a2727", "hover_color": "#571c1c", "text_color": "white"}
 
-        self.btn_start = ctk.CTkButton(self.sidebar_frame, text="Start Monitoring", command=self.start_monitoring, state="disabled", fg_color="#28a745", hover_color="#218838", height=40)
-        self.btn_start.grid(row=2, column=0, padx=20, pady=10)
+        # Buttons Group 1: Baseline
+        self.btn_baseline = ctk.CTkButton(self.sidebar_frame, text="Create Baseline", command=self.animated_create_baseline, height=35, **primary_style)
+        self.btn_baseline.grid(row=1, column=0, padx=20, pady=(10, 5))
+        
+        self.btn_clear_base = ctk.CTkButton(self.sidebar_frame, text="Clear Baseline", command=self.clear_baseline, height=35, **secondary_style)
+        self.btn_clear_base.grid(row=2, column=0, padx=20, pady=(0, 15))
 
-        self.btn_stop = ctk.CTkButton(self.sidebar_frame, text="Stop Monitoring", command=self.stop_monitoring, state="disabled", fg_color="#dc3545", hover_color="#c82333", height=40)
-        self.btn_stop.grid(row=3, column=0, padx=20, pady=10)
+        # Buttons Group 2: Monitoring
+        self.btn_start = ctk.CTkButton(self.sidebar_frame, text="Start Monitoring", command=self.start_monitoring, state="disabled", height=35, **start_style)
+        self.btn_start.grid(row=3, column=0, padx=20, pady=(10, 5))
 
-        self.btn_add_key = ctk.CTkButton(self.sidebar_frame, text="Add Custom Key", command=self.open_add_key_dialog, fg_color="#17a2b8", hover_color="#138496", height=40)
-        self.btn_add_key.grid(row=4, column=0, padx=20, pady=10)
+        self.btn_stop = ctk.CTkButton(self.sidebar_frame, text="Stop Monitoring", command=self.stop_monitoring, state="disabled", height=35, **stop_style)
+        self.btn_stop.grid(row=4, column=0, padx=20, pady=(0, 15))
 
-        self.btn_report = ctk.CTkButton(self.sidebar_frame, text="Generate Report", command=self.generate_report, fg_color="#ffc107", text_color="black", hover_color="#e0a800", height=40)
-        self.btn_report.grid(row=5, column=0, padx=20, pady=10)
+        # Buttons Group 3: Configuration
+        self.btn_add_key = ctk.CTkButton(self.sidebar_frame, text="Add Custom Key", command=self.open_add_key_dialog, height=35, **secondary_style)
+        self.btn_add_key.grid(row=5, column=0, padx=20, pady=10)
 
-        # Main view area
+        # Buttons Group 4: Reporting & Logging
+        self.btn_report = ctk.CTkButton(self.sidebar_frame, text="Generate Report", command=self.generate_report, height=35, **primary_style)
+        self.btn_report.grid(row=6, column=0, padx=20, pady=(15, 5))
+
+        self.btn_open_pdf = ctk.CTkButton(self.sidebar_frame, text="Open PDF", command=self.open_pdf, height=35, **secondary_style)
+        self.btn_open_pdf.grid(row=7, column=0, padx=20, pady=(0, 15))
+
+        self.btn_clear_term = ctk.CTkButton(self.sidebar_frame, text="Clear Terminal", command=self.clear_terminal, height=35, **secondary_style)
+        self.btn_clear_term.grid(row=8, column=0, padx=20, pady=(15, 10))
+
+        # Buttons Group 5: Info (Locked to bottom)
+        self.btn_info = ctk.CTkButton(self.sidebar_frame, text="About Project", command=self.show_info, height=35, **secondary_style)
+        self.btn_info.grid(row=10, column=0, padx=20, pady=(10, 20), sticky="s")
+
+        # --- Main View Area ---
         self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.main_frame.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
         self.main_frame.grid_rowconfigure(2, weight=1)
@@ -150,25 +172,25 @@ class RegistryMonitorApp(ctk.CTk):
         
         status_container = ctk.CTkFrame(self.card_status, fg_color="transparent")
         status_container.pack(expand=True, fill="both")
-        self.lbl_status = ctk.CTkLabel(status_container, text="OFFLINE", font=ctk.CTkFont(size=22, weight="bold"), text_color="#dc3545")
+        self.lbl_status = ctk.CTkLabel(status_container, text="OFFLINE", font=ctk.CTkFont(size=22, weight="bold"), text_color="#aaaaaa")
         self.lbl_status.place(relx=0.5, rely=0.5, anchor="center")
 
         self.card_targets = ctk.CTkFrame(self.main_frame, corner_radius=15)
         self.card_targets.grid(row=0, column=1, padx=10, pady=(0, 20), sticky="nsew")
         ctk.CTkLabel(self.card_targets, text="Monitored Keys", font=ctk.CTkFont(weight="bold")).pack(pady=(15, 0))
-        self.gauge_targets = CircularGauge(self.card_targets, color="#17a2b8", max_value=20)
+        self.gauge_targets = CircularGauge(self.card_targets, color="#4da6ff", max_value=100) 
         self.gauge_targets.pack(expand=True, fill="both", padx=10, pady=10)
 
         self.card_alerts = ctk.CTkFrame(self.main_frame, corner_radius=15)
         self.card_alerts.grid(row=0, column=2, padx=10, pady=(0, 20), sticky="nsew")
         ctk.CTkLabel(self.card_alerts, text="Total Alerts", font=ctk.CTkFont(weight="bold")).pack(pady=(15, 0))
-        self.gauge_alerts = CircularGauge(self.card_alerts, color="#ffc107", max_value=50)
+        self.gauge_alerts = CircularGauge(self.card_alerts, color="#ffb84d", max_value=100) 
         self.gauge_alerts.pack(expand=True, fill="both", padx=10, pady=10)
 
         self.card_critical = ctk.CTkFrame(self.main_frame, corner_radius=15)
         self.card_critical.grid(row=0, column=3, padx=10, pady=(0, 20), sticky="nsew")
         ctk.CTkLabel(self.card_critical, text="Critical Threats", font=ctk.CTkFont(weight="bold")).pack(pady=(15, 0))
-        self.gauge_critical = CircularGauge(self.card_critical, color="#dc3545", max_value=10)
+        self.gauge_critical = CircularGauge(self.card_critical, color="#ff4d4d", max_value=100) 
         self.gauge_critical.pack(expand=True, fill="both", padx=10, pady=10)
 
         # Progress bar
@@ -180,15 +202,75 @@ class RegistryMonitorApp(ctk.CTk):
         self.log_area = ctk.CTkTextbox(self.main_frame, font=ctk.CTkFont(family="Consolas", size=13), corner_radius=10)
         self.log_area.grid(row=2, column=0, columnspan=4, sticky="nsew", padx=10, pady=(0, 10))
         
-        self.log_area.tag_config("alert", foreground="#ff4444")
+        self.log_area.tag_config("alert", foreground="#ff6b6b")
         self.log_area.tag_config("critical", foreground="#ffffff", background="#cc0000")
-        self.log_area.tag_config("success", foreground="#28a745")
+        self.log_area.tag_config("success", foreground="#51cf66")
 
 
-    # --- UI Actions ---
+    # --- New UI Actions ---
+    def clear_baseline(self):
+        """Deletes the current baseline file, resets memory state, and clears dashboard stats."""
+        if os.path.exists(BASELINE_FILE):
+            try:
+                os.remove(BASELINE_FILE)
+            except Exception as e:
+                self.log_message(f"ERROR: Could not delete baseline file. {str(e)}", alert=True)
+                return
+                
+        # Reset internal memory
+        self.baseline_data = {}
+        self.session_logs = []
+        self.critical_incidents = []
+        
+        # Reset visual counters back to 0
+        self.alert_count = 0
+        self.critical_count = 0
+        
+        # Update the gauges immediately to reflect the reset (Monitored Keys drops to 0)
+        self.gauge_targets.set_value(0)
+        self.update_stats() 
+        
+        # Reset UI elements
+        self.btn_start.configure(state="disabled")
+        self.clear_terminal() 
+        
+        self.log_message("Action: Baseline cleared. System and statistics reset. Create a new baseline to monitor.", success=True)
+
+    def open_pdf(self):
+        """Opens the generated PDF report using the default system viewer."""
+        if os.path.exists(REPORT_PDF_FILE):
+            self.log_message(f"Action: Opening {REPORT_PDF_FILE} in default viewer...")
+            try:
+                os.startfile(REPORT_PDF_FILE)
+            except Exception as e:
+                self.log_message(f"ERROR: Unable to open PDF. {str(e)}", alert=True)
+        else:
+            self.log_message("ERROR: No PDF report found. Please generate one first.", alert=True)
+            messagebox.showwarning("Report Not Found", "No PDF report exists yet. Please click 'Generate Report' first.")
+
+    def clear_terminal(self):
+        """Wipes the on-screen console text."""
+        self.log_area.configure(state="normal")
+        self.log_area.delete("1.0", "end")
+        self.log_area.configure(state="disabled")
+        self.log_message("Terminal output cleared.", success=True)
+
+    def show_info(self):
+        """Displays project and author information."""
+        info_text = (
+            "Windows Registry Change Monitoring System\n\n"
+            "Developed by: Akshat Tiwari\n"
+            "GitHub: https://github.com/akshatcore/Windows-Registry-Monitor\n\n"
+            "A Blue Team toolkit designed to track unauthorized changes to the "
+            "Windows Registry and detect malware persistence."
+        )
+        messagebox.showinfo("About Project", info_text)
+
+
+    # --- Existing UI Actions ---
     def animated_create_baseline(self):
-        """Creates a baseline snapshot with progress bar animation."""
         self.btn_baseline.configure(state="disabled")
+        self.btn_clear_base.configure(state="disabled")
         self.btn_start.configure(state="disabled")
         self.log_message("Action: Scanning registry and creating Baseline Snapshot...")
         threading.Thread(target=self._baseline_worker, daemon=True).start()
@@ -210,14 +292,16 @@ class RegistryMonitorApp(ctk.CTk):
                 json.dump(self.baseline_data, f, indent=4)
             self.after(0, lambda: self.log_message(f"SUCCESS: Baseline captured and saved to '{BASELINE_FILE}'.", success=True))
             self.after(0, lambda: self.btn_start.configure(state="normal"))
+            # Update the monitored keys gauge ONLY when baseline is captured successfully
+            self.after(0, lambda: self.gauge_targets.set_value(len(self.baseline_data)))
         except Exception as e:
             self.after(0, lambda: self.log_message(f"ERROR: Failed to save baseline: {str(e)}", alert=True))
             
         self.after(0, lambda: self.btn_baseline.configure(state="normal"))
+        self.after(0, lambda: self.btn_clear_base.configure(state="normal"))
         self.after(1000, lambda: self.progress_bar.set(0)) 
 
     def open_add_key_dialog(self):
-        """Displays modal dialog for adding custom registry paths."""
         dialog = ctk.CTkToplevel(self)
         dialog.title("Add Custom Registry Key")
         dialog.geometry("450x380")
@@ -245,21 +329,18 @@ class RegistryMonitorApp(ctk.CTk):
             hive_map = {"HKEY_LOCAL_MACHINE": winreg.HKEY_LOCAL_MACHINE, "HKEY_CURRENT_USER": winreg.HKEY_CURRENT_USER, "HKEY_USERS": winreg.HKEY_USERS, "HKEY_CLASSES_ROOT": winreg.HKEY_CLASSES_ROOT}
             self.target_keys.append({"hive": hive_map[hive_str], "path": path_val, "name": name_val})
 
-            self.gauge_targets.set_value(len(self.target_keys))
             self.log_message(f"Added custom monitoring target: '{name_val}'", success=True)
             self.log_message("WARNING: You MUST click 'Create Baseline' again to index this new key!", alert=True)
             self.btn_start.configure(state="disabled")
             dialog.destroy()
 
-        ctk.CTkButton(dialog, text="Add to Target List", command=save_custom_key, fg_color="#17a2b8", hover_color="#138496").pack()
+        ctk.CTkButton(dialog, text="Add to Target List", command=save_custom_key, fg_color="#1f538d", hover_color="#14375e").pack()
 
     def update_stats(self):
-        """Refreshes dashboard metric gauges."""
         self.gauge_alerts.set_value(self.alert_count)
         self.gauge_critical.set_value(self.critical_count)
 
     def log_message(self, message, alert=False, critical=False, success=False):
-        """Handles logging outputs to the UI text console and internal tracking."""
         self.log_area.configure(state="normal")
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log_entry = f"[{timestamp}] {message}"
@@ -284,7 +365,6 @@ class RegistryMonitorApp(ctk.CTk):
 
     # --- Monitoring Logic ---
     def read_registry_key(self, hive, path):
-        """Reads target registry values safely."""
         values_dict = {}
         try:
             key = winreg.OpenKey(hive, path, 0, winreg.KEY_READ)
@@ -301,38 +381,44 @@ class RegistryMonitorApp(ctk.CTk):
         return values_dict
 
     def load_baseline(self):
-        """Loads baseline data from disk to memory."""
         try:
             with open(BASELINE_FILE, 'r') as f: self.baseline_data = json.load(f)
             self.log_message("Baseline loaded successfully.", success=True)
+            # Sync gauge on startup if baseline already exists
+            self.gauge_targets.set_value(len(self.baseline_data))
         except Exception as e:
             self.log_message(f"ERROR: Failed to load baseline: {str(e)}", alert=True)
 
     def start_monitoring(self):
-        """Initiates the background monitoring thread."""
         if not self.baseline_data: return
         self.is_monitoring = True
-        self.lbl_status.configure(text="MONITORING", text_color="#28a745")
+        self.lbl_status.configure(text="MONITORING", text_color="#51cf66")
+        
+        # Disable configs while running
         self.btn_baseline.configure(state="disabled")
+        self.btn_clear_base.configure(state="disabled")
         self.btn_add_key.configure(state="disabled")
         self.btn_start.configure(state="disabled")
         self.btn_stop.configure(state="normal")
+        
         self.log_message("Monitoring Started.")
         self.monitor_thread = threading.Thread(target=self.monitor_loop, daemon=True)
         self.monitor_thread.start()
 
     def stop_monitoring(self):
-        """Stops the background monitoring thread."""
         self.is_monitoring = False
-        self.lbl_status.configure(text="OFFLINE", text_color="#dc3545")
+        self.lbl_status.configure(text="OFFLINE", text_color="#aaaaaa")
+        
+        # Re-enable configs
         self.btn_baseline.configure(state="normal")
+        self.btn_clear_base.configure(state="normal")
         self.btn_add_key.configure(state="normal")
         self.btn_start.configure(state="normal")
         self.btn_stop.configure(state="disabled")
+        
         self.log_message("Monitoring Stopped.")
 
     def monitor_loop(self):
-        """Continuous polling background loop."""
         while self.is_monitoring:
             for target in self.target_keys:
                 target_name = target['name']
@@ -342,7 +428,6 @@ class RegistryMonitorApp(ctk.CTk):
             time.sleep(POLL_INTERVAL)
 
     def analyze_suspicious_behavior(self, target_name, action, key_name, value):
-        """Checks changes against known malware behaviors."""
         is_suspicious = False
         reasons = []
         val_str = str(value).lower()
@@ -357,7 +442,6 @@ class RegistryMonitorApp(ctk.CTk):
             self.log_message(f"MALWARE PATTERN DETECTED: [{' | '.join(reasons)}] on Key: '{key_name}' -> '{value}'", critical=True)
 
     def compare_registry_state(self, target_name, baseline_values, current_values):
-        """Compares current registry state to the baseline and logs changes."""
         for key_name, current_data in current_values.items():
             if key_name not in baseline_values:
                 self.log_message(f"NEW ENTRY DETECTED in {target_name}: '{key_name}' -> '{current_data['value']}'", alert=True)
@@ -376,7 +460,6 @@ class RegistryMonitorApp(ctk.CTk):
                     baseline_values[key_name] = current_data
 
     def generate_report(self):
-        """Generates a highly structured, professional PDF report."""
         self.log_message("Action: Generating Professional Security Report (PDF)...")
         
         try:
@@ -385,7 +468,7 @@ class RegistryMonitorApp(ctk.CTk):
             
             # --- Document Header ---
             pdf.set_font("Arial", 'B', 18)
-            pdf.set_text_color(33, 37, 41) # Dark Slate Gray
+            pdf.set_text_color(33, 37, 41) 
             pdf.cell(0, 10, "Performa Sec - Registry Monitoring Report", ln=True, align="C")
             pdf.set_font("Arial", 'I', 10)
             pdf.set_text_color(100, 100, 100)
@@ -395,7 +478,7 @@ class RegistryMonitorApp(ctk.CTk):
             # --- Section: Executive Summary ---
             pdf.set_font("Arial", 'B', 12)
             pdf.set_text_color(255, 255, 255)
-            pdf.set_fill_color(23, 162, 184) # Cyan Blue Header
+            pdf.set_fill_color(31, 83, 141) 
             pdf.cell(0, 8, " 1. Executive Summary ", ln=True, fill=True)
             
             pdf.set_font("Arial", '', 10)
@@ -405,10 +488,9 @@ class RegistryMonitorApp(ctk.CTk):
             pdf.cell(0, 6, f"Total Paths Monitored: {len(self.target_keys)}", ln=True)
             pdf.cell(0, 6, f"Standard Alerts Triggered: {self.alert_count}", ln=True)
             
-            # Color code the critical threat metric
             pdf.cell(40, 6, "Critical Threats Found: ")
             if self.critical_count > 0:
-                pdf.set_text_color(220, 53, 69) # Red if threats exist
+                pdf.set_text_color(220, 53, 69) 
                 pdf.set_font("Arial", 'B', 10)
             pdf.cell(0, 6, str(self.critical_count), ln=True)
             pdf.set_font("Arial", '', 10)
@@ -418,19 +500,17 @@ class RegistryMonitorApp(ctk.CTk):
             # --- Section: Monitored Registry Paths ---
             pdf.set_font("Arial", 'B', 12)
             pdf.set_text_color(255, 255, 255)
-            pdf.set_fill_color(0, 123, 255) # Standard Blue Header
+            pdf.set_fill_color(31, 83, 141)
             pdf.cell(0, 8, " 2. Monitored Registry Paths (Scope) ", ln=True, fill=True)
             
             pdf.set_font("Arial", '', 9)
             pdf.set_text_color(50, 50, 50)
             pdf.ln(2)
             
-            # Helper to convert winreg int to string for the report
             hive_map = {winreg.HKEY_LOCAL_MACHINE: "HKLM", winreg.HKEY_CURRENT_USER: "HKCU"}
             
             for target in self.target_keys:
                 hive_name = hive_map.get(target['hive'], "CUSTOM_HIVE")
-                # multi_cell automatically wraps long paths so they don't fall off the page
                 pdf.multi_cell(0, 6, f"[{hive_name}] {target['name']}:\n  -> {target['path']}")
                 pdf.ln(2)
             pdf.ln(6)
@@ -438,7 +518,7 @@ class RegistryMonitorApp(ctk.CTk):
             # --- Section: Critical Incidents ---
             pdf.set_font("Arial", 'B', 12)
             pdf.set_text_color(255, 255, 255)
-            pdf.set_fill_color(220, 53, 69) # Red Header for Threats
+            pdf.set_fill_color(122, 39, 39) 
             pdf.cell(0, 8, " 3. Critical Malware Incidents ", ln=True, fill=True)
             
             pdf.set_font("Arial", '', 10)
@@ -446,10 +526,10 @@ class RegistryMonitorApp(ctk.CTk):
             pdf.ln(2)
             if not self.critical_incidents:
                 pdf.set_font("Arial", 'I', 10)
-                pdf.set_text_color(40, 167, 69) # Green
+                pdf.set_text_color(33, 95, 61) 
                 pdf.cell(0, 6, "Clear: No critical malware patterns were detected during this session.", ln=True)
             else:
-                pdf.set_text_color(220, 0, 0) # Dark Red Text
+                pdf.set_text_color(220, 0, 0) 
                 for incident in self.critical_incidents:
                     pdf.multi_cell(0, 6, incident)
                     pdf.ln(1)
@@ -458,10 +538,9 @@ class RegistryMonitorApp(ctk.CTk):
             # --- Section: Full Session Log ---
             pdf.set_font("Arial", 'B', 12)
             pdf.set_text_color(255, 255, 255)
-            pdf.set_fill_color(108, 117, 125) # Gray Header
+            pdf.set_fill_color(80, 80, 80) 
             pdf.cell(0, 8, " 4. Detailed Session Log ", ln=True, fill=True)
             
-            # Use a terminal-style monospace font for logs
             pdf.set_font("Courier", '', 8)
             pdf.set_text_color(0, 0, 0)
             pdf.ln(2)
@@ -470,14 +549,13 @@ class RegistryMonitorApp(ctk.CTk):
                 pdf.ln(0.5)
 
             # Save the PDF
-            report_filename = "Performa_Security_Report.pdf"
-            pdf.output(report_filename)
+            pdf.output(REPORT_PDF_FILE)
 
-            self.log_message(f"SUCCESS: Professional PDF Report saved to '{report_filename}'.", success=True)
-            messagebox.showinfo("Report Generated", f"Enterprise-grade PDF report has been saved as:\n{report_filename}")
+            self.log_message(f"SUCCESS: Professional PDF Report saved to '{REPORT_PDF_FILE}'.", success=True)
+            messagebox.showinfo("Report Generated", f"Enterprise-grade PDF report has been saved as:\n{REPORT_PDF_FILE}")
             
         except Exception as e:
-            self.log_message(f"ERROR: Failed to write PDF report. Ensure 'fpdf' is installed. ({str(e)})", alert=True)
+            self.log_message(f"ERROR: Failed to write PDF report. ({str(e)})", alert=True)
 
 if __name__ == "__main__":
     app = RegistryMonitorApp()

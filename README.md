@@ -19,3 +19,7 @@ This project is a Blue Team cybersecurity toolkit designed to track unauthorized
    ```bash
    git clone [https://github.com/akshatcore/Windows-Registry-Monitor.git](https://github.com/akshatcore/Windows-Registry-Monitor.git)
    cd Windows-Registry-Monitor
+   Install the required dependencies:
+
+2.Bash
+  pip install -r requirements.txt

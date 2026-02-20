@@ -90,9 +90,11 @@ pip install -r requirements.txt
 
 This tool is intended for educational and defensive (Blue Team) purposes only. Modifying the Windows Registry without knowing what you are doing can cause system instability. Always proceed with caution.
 
+<br>
+
 <div align="center">
-<a href="https://www.google.com/url?sa=E&source=gmail&q=https://github.com/akshatcore">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/Developed%2520with%2520❤️%20by-Akshat%20Tiwari-1f538d?style=for-the-badge&logo=github" alt="Developed by Akshat Tiwari" />
-</a>
+  <a href="https://github.com/akshatcore">
+    <img src="https://img.shields.io/badge/Developed%20with%20❤️%20by-Akshat%20Tiwari-1f538d?style=for-the-badge&logo=github" alt="Developed by Akshat Tiwari" />
+  </a>
 </div>
 

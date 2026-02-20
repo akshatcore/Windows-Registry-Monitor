@@ -2,10 +2,10 @@
 
 # 🛡️ Performa Sec: Windows Registry Change Monitoring System
 
-[![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python&logoColor=white)]()
-[![UI Library](https://img.shields.io/badge/UI-CustomTkinter-emerald?style=for-the-badge)]()
+[![Python Version](https://img.shields.io/badge/Python-3.8%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)]()
+[![UI Library](https://img.shields.io/badge/UI-CustomTkinter-4da6ff?style=for-the-badge)]()
 [![Security](https://img.shields.io/badge/Focus-Blue_Team-1f538d?style=for-the-badge&logo=security&logoColor=white)]()
-[![Status](https://img.shields.io/badge/Status-Completed-success?style=for-the-badge)]()
+[![Status](https://img.shields.io/badge/Status-Completed-51cf66?style=for-the-badge)]()
 
 <br>
 

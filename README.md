@@ -15,7 +15,7 @@
 
 <br>
 
-<img src="dashboard.png" alt="Performa Dashboard" width="800" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+<img src="dashboard.png?v=2" alt="Performa Dashboard" width="800" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
 
 </div>
 

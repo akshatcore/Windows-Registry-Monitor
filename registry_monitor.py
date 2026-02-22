@@ -32,7 +32,6 @@ class CircularGauge(tk.Canvas):
 
     def set_value(self, value):
         self.target_value = value
-        # Removed auto-scaling so the circle strictly represents progress to 100
         self.animate()
 
     def animate(self):
@@ -81,6 +80,14 @@ class RegistryMonitorApp(ctk.CTk):
         self.geometry("1150x750")
         self.minsize(950, 600) 
         
+        # Internal map for translating winreg ints to readable strings for terminal
+        self.hive_names = {
+            winreg.HKEY_LOCAL_MACHINE: "HKEY_LOCAL_MACHINE",
+            winreg.HKEY_CURRENT_USER: "HKEY_CURRENT_USER",
+            winreg.HKEY_USERS: "HKEY_USERS",
+            winreg.HKEY_CLASSES_ROOT: "HKEY_CLASSES_ROOT"
+        }
+        
         self.target_keys = [
             {"hive": winreg.HKEY_LOCAL_MACHINE, "path": r"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "name": "HKLM Autorun"},
             {"hive": winreg.HKEY_LOCAL_MACHINE, "path": r"SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce", "name": "HKLM Autorun (RunOnce)"},
@@ -116,7 +123,7 @@ class RegistryMonitorApp(ctk.CTk):
         # --- Sidebar Navigation ---
         self.sidebar_frame = ctk.CTkFrame(self, width=220, corner_radius=0)
         self.sidebar_frame.grid(row=0, column=0, sticky="nsew")
-        self.sidebar_frame.grid_rowconfigure(9, weight=1) # Spacer row pushes info button to bottom
+        self.sidebar_frame.grid_rowconfigure(9, weight=1) 
 
         self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="🛡️ Performa Sec", font=ctk.CTkFont(size=22, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(30, 40))
@@ -155,7 +162,7 @@ class RegistryMonitorApp(ctk.CTk):
         self.btn_clear_term = ctk.CTkButton(self.sidebar_frame, text="Clear Terminal", command=self.clear_terminal, height=35, **secondary_style)
         self.btn_clear_term.grid(row=8, column=0, padx=20, pady=(15, 10))
 
-        # Buttons Group 5: Info (Locked to bottom)
+        # Buttons Group 5: Info 
         self.btn_info = ctk.CTkButton(self.sidebar_frame, text="About Project", command=self.show_info, height=35, **secondary_style)
         self.btn_info.grid(row=10, column=0, padx=20, pady=(10, 20), sticky="s")
 
@@ -217,27 +224,19 @@ class RegistryMonitorApp(ctk.CTk):
                 self.log_message(f"ERROR: Could not delete baseline file. {str(e)}", alert=True)
                 return
                 
-        # Reset internal memory
         self.baseline_data = {}
         self.session_logs = []
         self.critical_incidents = []
-        
-        # Reset visual counters back to 0
         self.alert_count = 0
         self.critical_count = 0
         
-        # Update the gauges immediately to reflect the reset (Monitored Keys drops to 0)
         self.gauge_targets.set_value(0)
         self.update_stats() 
-        
-        # Reset UI elements
         self.btn_start.configure(state="disabled")
         self.clear_terminal() 
-        
         self.log_message("Action: Baseline cleared. System and statistics reset. Create a new baseline to monitor.", success=True)
 
     def open_pdf(self):
-        """Opens the generated PDF report using the default system viewer."""
         if os.path.exists(REPORT_PDF_FILE):
             self.log_message(f"Action: Opening {REPORT_PDF_FILE} in default viewer...")
             try:
@@ -249,14 +248,12 @@ class RegistryMonitorApp(ctk.CTk):
             messagebox.showwarning("Report Not Found", "No PDF report exists yet. Please click 'Generate Report' first.")
 
     def clear_terminal(self):
-        """Wipes the on-screen console text."""
         self.log_area.configure(state="normal")
         self.log_area.delete("1.0", "end")
         self.log_area.configure(state="disabled")
         self.log_message("Terminal output cleared.", success=True)
 
     def show_info(self):
-        """Displays project and author information."""
         info_text = (
             "Windows Registry Change Monitoring System\n\n"
             "Developed by: Akshat Tiwari\n"
@@ -282,7 +279,8 @@ class RegistryMonitorApp(ctk.CTk):
         for index, target in enumerate(self.target_keys):
             time.sleep(0.15) 
             extracted_values = self.read_registry_key(target['hive'], target['path'])
-            self.baseline_data[target['name']] = {"path": target['path'], "values": extracted_values}
+            # Storing full absolute context for explicit reporting
+            self.baseline_data[target['name']] = {"hive": target['hive'], "path": target['path'], "values": extracted_values}
             
             progress = (index + 1) / total
             self.after(0, self.progress_bar.set, progress)
@@ -292,7 +290,6 @@ class RegistryMonitorApp(ctk.CTk):
                 json.dump(self.baseline_data, f, indent=4)
             self.after(0, lambda: self.log_message(f"SUCCESS: Baseline captured and saved to '{BASELINE_FILE}'.", success=True))
             self.after(0, lambda: self.btn_start.configure(state="normal"))
-            # Update the monitored keys gauge ONLY when baseline is captured successfully
             self.after(0, lambda: self.gauge_targets.set_value(len(self.baseline_data)))
         except Exception as e:
             self.after(0, lambda: self.log_message(f"ERROR: Failed to save baseline: {str(e)}", alert=True))
@@ -384,7 +381,6 @@ class RegistryMonitorApp(ctk.CTk):
         try:
             with open(BASELINE_FILE, 'r') as f: self.baseline_data = json.load(f)
             self.log_message("Baseline loaded successfully.", success=True)
-            # Sync gauge on startup if baseline already exists
             self.gauge_targets.set_value(len(self.baseline_data))
         except Exception as e:
             self.log_message(f"ERROR: Failed to load baseline: {str(e)}", alert=True)
@@ -394,7 +390,6 @@ class RegistryMonitorApp(ctk.CTk):
         self.is_monitoring = True
         self.lbl_status.configure(text="MONITORING", text_color="#51cf66")
         
-        # Disable configs while running
         self.btn_baseline.configure(state="disabled")
         self.btn_clear_base.configure(state="disabled")
         self.btn_add_key.configure(state="disabled")
@@ -409,7 +404,6 @@ class RegistryMonitorApp(ctk.CTk):
         self.is_monitoring = False
         self.lbl_status.configure(text="OFFLINE", text_color="#aaaaaa")
         
-        # Re-enable configs
         self.btn_baseline.configure(state="normal")
         self.btn_clear_base.configure(state="normal")
         self.btn_add_key.configure(state="normal")
@@ -427,41 +421,51 @@ class RegistryMonitorApp(ctk.CTk):
                     self.compare_registry_state(target_name, self.baseline_data[target_name]['values'], current_values)
             time.sleep(POLL_INTERVAL)
 
-    def analyze_suspicious_behavior(self, target_name, action, key_name, value):
+    def analyze_suspicious_behavior(self, target_name, action, key_name, value, abs_path):
         is_suspicious = False
         reasons = []
         val_str = str(value).lower()
         if "Autorun" in target_name and action in ["ADDED", "MODIFIED"]:
             if any(ext in val_str for ext in ['.exe', '.bat', '.ps1', '.vbs', '.cmd', '.dll']):
                 is_suspicious, reasons = True, reasons + ["Executable/Script added to startup"]
-            if any(path in val_str for path in ['appdata', 'temp', 'programdata', 'public']):
+            if any(dir_name in val_str for dir_name in ['appdata', 'temp', 'programdata', 'public']):
                 is_suspicious, reasons = True, reasons + ["Executes from hidden/temp directory"]
         if "Defender" in target_name and action in ["ADDED", "MODIFIED"] and "disable" in str(key_name).lower() and str(value) == "1":
             is_suspicious, reasons = True, reasons + ["Attempt to disable Windows Security"]
+        
         if is_suspicious:
-            self.log_message(f"MALWARE PATTERN DETECTED: [{' | '.join(reasons)}] on Key: '{key_name}' -> '{value}'", critical=True)
+            self.log_message(f"MALWARE PATTERN DETECTED: [{' | '.join(reasons)}]", critical=True)
+            self.log_message(f"  -> Path: {abs_path}\\{key_name}", critical=True)
+            self.log_message(f"  -> Payload: '{value}'", critical=True)
 
     def compare_registry_state(self, target_name, baseline_values, current_values):
+        # Extract full context for advanced reporting
+        hive_id = self.baseline_data[target_name].get('hive', None)
+        base_path = self.baseline_data[target_name].get('path', 'Unknown_Path')
+        hive_str = self.hive_names.get(hive_id, "CUSTOM_HIVE")
+        abs_path = f"{hive_str}\\{base_path}"
+
         for key_name, current_data in current_values.items():
             if key_name not in baseline_values:
-                self.log_message(f"NEW ENTRY DETECTED in {target_name}: '{key_name}' -> '{current_data['value']}'", alert=True)
-                self.analyze_suspicious_behavior(target_name, "ADDED", key_name, current_data['value'])
+                self.log_message(f"ENTRY ADDED: {abs_path} -> '{key_name}' = '{current_data['value']}'", alert=True)
+                self.analyze_suspicious_behavior(target_name, "ADDED", key_name, current_data['value'], abs_path)
                 baseline_values[key_name] = current_data 
+                
         keys_to_remove = [k for k in baseline_values.keys() if k not in current_values]
         for key in keys_to_remove:
-            self.log_message(f"ENTRY DELETED in {target_name}: '{key}' was removed.", alert=True)
+            self.log_message(f"ENTRY DELETED: {abs_path}\\{key} was removed.", alert=True)
             del baseline_values[key]
+            
         for key_name, baseline_data in baseline_values.items():
             if key_name in current_values:
                 current_data = current_values[key_name]
                 if str(baseline_data['value']) != str(current_data['value']):
-                    self.log_message(f"VALUE MODIFIED in {target_name}: '{key_name}' changed from '{baseline_data['value']}' to '{current_data['value']}'", alert=True)
-                    self.analyze_suspicious_behavior(target_name, "MODIFIED", key_name, current_data['value'])
+                    self.log_message(f"VALUE MODIFIED: {abs_path}\\{key_name} changed from '{baseline_data['value']}' to '{current_data['value']}'", alert=True)
+                    self.analyze_suspicious_behavior(target_name, "MODIFIED", key_name, current_data['value'], abs_path)
                     baseline_values[key_name] = current_data
 
     def generate_report(self):
         self.log_message("Action: Generating Professional Security Report (PDF)...")
-        
         try:
             pdf = FPDF()
             pdf.add_page()
@@ -550,7 +554,6 @@ class RegistryMonitorApp(ctk.CTk):
 
             # Save the PDF
             pdf.output(REPORT_PDF_FILE)
-
             self.log_message(f"SUCCESS: Professional PDF Report saved to '{REPORT_PDF_FILE}'.", success=True)
             messagebox.showinfo("Report Generated", f"Enterprise-grade PDF report has been saved as:\n{REPORT_PDF_FILE}")
             

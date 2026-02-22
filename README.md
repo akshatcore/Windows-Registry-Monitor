@@ -2,10 +2,10 @@
 
 # 🛡️ Performa Sec: Windows Registry Change Monitoring System
 
-[![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue?style=for-the-badge&logo=python&logoColor=white)]()
-[![UI Library](https://img.shields.io/badge/UI-CustomTkinter-emerald?style=for-the-badge)]()
-[![Security](https://img.shields.io/badge/Focus-Blue_Team-red?style=for-the-badge&logo=security&logoColor=white)]()
-[![Status](https://img.shields.io/badge/Status-Completed-success?style=for-the-badge)]()
+[![Python Version](https://img.shields.io/badge/Python-3.8%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)]()
+[![UI Library](https://img.shields.io/badge/UI-CustomTkinter-4da6ff?style=for-the-badge)]()
+[![Security](https://img.shields.io/badge/Focus-Blue_Team-1f538d?style=for-the-badge&logo=security&logoColor=white)]()
+[![Status](https://img.shields.io/badge/Status-Completed-51cf66?style=for-the-badge)]()
 
 <br>
 
@@ -15,7 +15,7 @@
 
 <br>
 
-<img src="dashboard.png" alt="Performa Dashboard" width="800" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+<img src="dashboard.png?v=2" alt="Performa Dashboard" width="800" style="border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
 
 </div>
 
@@ -90,9 +90,11 @@ pip install -r requirements.txt
 
 This tool is intended for educational and defensive (Blue Team) purposes only. Modifying the Windows Registry without knowing what you are doing can cause system instability. Always proceed with caution.
 
+<br>
+
 <div align="center">
-<a href="https://www.google.com/url?sa=E&source=gmail&q=https://github.com/akshatcore">
-<img src="https://www.google.com/search?q=https://img.shields.io/badge/Developed%2520with%2520❤️%20by-Akshat%20Tiwari-1f538d?style=for-the-badge&logo=github" alt="Developed by Akshat Tiwari" />
-</a>
+  <a href="https://github.com/akshatcore">
+    <img src="https://img.shields.io/badge/Developed%20with%20❤️%20by-Akshat%20Tiwari-1f538d?style=for-the-badge&logo=github" alt="Developed by Akshat Tiwari" />
+  </a>
 </div>
 
